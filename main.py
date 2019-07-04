@@ -20,7 +20,7 @@ motor.setup(busnum=busnum)     # Initialize the Raspberry Pi GPIO connected to t
 car_dir.home()
 print ('Starting racer')
 motor.forward()
-motor.setSpeed(35)
+motor.setSpeed(30)
 while(cap.isOpened()):
     ret, frame = cap.read()
     #cv2.imshow('frame', frame)
@@ -37,6 +37,8 @@ while(cap.isOpened()):
         c = max(contours, key=cv2.contourArea)
         M = cv2.moments(c)
 
+        if M['m00'] == 0.0 : 
+            M['m00'] += 1
         cx = int(M['m10']/M['m00'])
         cy = int(M['m01']/M['m00'])
 
@@ -48,20 +50,24 @@ while(cap.isOpened()):
         if cx >= 120:
             car_dir.turn_right()
             motor.forward()
+            motor.setSpeed(24)
             print ("L")
 
         if cx < 120 and cx > 50:
             car_dir.home()
+            motor.setSpeed(24)
             motor.forward()
 
         if cx <= 50:
             car_dir.turn_left()
             motor.forward()
+            motor.setSpeed(24)
             print ("R")
 
     else:
-	car_dir.home()
-        motor.backward()
+        motor.setSpeed(24)
+        #motor.backward()
+        motor.forward()
         print ("No line")
 
     #Display the resulting frame
