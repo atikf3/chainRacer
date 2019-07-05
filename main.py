@@ -12,6 +12,7 @@ cap.set(3, 160)
 cap.set(4, 120)
 
 busnum = 1          # Edit busnum to 0, if you uses Raspberry Pi 1 or 0
+arrival = false
 
 video_dir.setup(busnum=busnum)
 car_dir.setup(busnum=busnum)
@@ -26,12 +27,26 @@ while(cap.isOpened()):
     ret, frame = cap.read()
     crop_img = frame
     hsv = cv2.cvtColor(crop_img, cv2.COLOR_BGR2HSV)
+
     lower_or = np.array([0, 40, 40])
     upper_or = np.array([30, 255, 255])
+    lower_bl = np.array([0, 40, 40])
+    upper_bl = np.array([30, 255, 255])
+
     mask = cv2.inRange(hsv, lower_or, upper_or)
+    mask_bl = cv2.inRange(hsv, lower_bl, upper_bl)
     blur = cv2.GaussianBlur(mask,(5,5),0)
+    blur_bl = cv2.GaussianBlur(mask_bl,(5,5),0)
     ret,thresh = cv2.threshold(blur,160,175,cv2.THRESH_BINARY)
+    thresh_bl = cv2.threshold(blur_bl,160,175,cv2.THRESH_BINARY)
+
     _, contours,hierarchy = cv2.findContours(thresh.copy(), 1, cv2.CHAIN_APPROX_NONE)
+    _bl, contours_bl,hierarchy_bl = cv2.findContours(thresh_bl.copy(), 1, cv2.CHAIN_APPROX_NONE)
+
+    if len(contours_bl) > 0 and arrival:
+        print('Done.')
+        break
+
     if len(contours) > 0:
         c = max(contours, key=cv2.contourArea)
         M = cv2.moments(c)
@@ -70,9 +85,10 @@ while(cap.isOpened()):
 
     cv2.imshow('Preview',crop_img)
     if cv2.waitKey(1) & 0xFF == ord('q'):
-        motor.stop()
-        car_dir.home()
         break
 
 print('Stopped.')
+car_dir.home()
 motor.stop()
+cap.release()
+cv2.destroyAllWindows()
